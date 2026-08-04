@@ -414,7 +414,14 @@
       resultGaiola.style.color = '#6c63ff';
       resultNome.textContent = `👤 ${encontrado.nome}`;
       resultNome.className = 'result-nome fade-in';
-      resultSub.textContent = `✔ ID ${typedId} encontrado! (${paradas.length} paradas)`;
+
+      // ===== ALTERAÇÃO CORRIGIDA AQUI =====
+      const totalPacotes = paradas.length;
+      const paradasUnicas = new Set(paradas.map(item => item.stop).filter(stop => stop && stop.trim() !== ''));
+      const totalParadas = paradasUnicas.size;
+      
+      resultSub.textContent = `✔ ID ${typedId} encontrado! (${totalPacotes} pacotes em ${totalParadas} paradas)`;
+      // ===================================
 
       if (paradas.length > 0) {
         romaneioArea.style.display = 'block';
