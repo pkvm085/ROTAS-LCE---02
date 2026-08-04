@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Gaiolas</title>
+    <style>
+        /* ESTILOS (mantenha os mesmos do código anterior) */
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
+        body { background:linear-gradient(135deg,#0f0c29,#302b63,#24243e); min-height:100vh; display:flex; justify-content:center; align-items:center; padding:20px; }
+        .container { background:rgba(255,255,255,0.05); backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.1); border-radius:40px; padding:40px 35px; max-width:720px; width:100%; box-shadow:0 25px 50px rgba(0,0,0,0.6); text-align:center; }
+        h1 { color:#fff; font-size:2.5rem; margin-bottom:5px; }
+        .subtitle { color:#a0a0c0; font-size:1rem; margin-bottom:25px; border-bottom:2px solid rgba(255,255,255,0.08); padding-bottom:15px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; }
+        .status { font-size:0.85rem; background:rgba(0,255,0,0.1); padding:4px 12px; border-radius:30px; color:#7cff7c; }
+        .input-group { display:flex; flex-direction:column; gap:12px; margin-bottom:25px; }
+        label { color:#d0d0f0; font-size:1.1rem; font-weight:500; text-align:left; }
+        #searchInput { padding:18px 22px; font-size:1.8rem; border:none; border-radius:18px; background:rgba(255,255,255,0.08); color:#fff; outline:2px solid rgba(255,255,255,0.1); transition:all 0.3s; text-align:center; font-weight:600; }
+        #searchInput:focus { outline:2px solid #6c63ff; background:rgba(255,255,255,0.15); }
+        .button-group { display:flex; gap:12px; flex-wrap:wrap; }
+        .btn { padding:14px 20px; font-size:1.1rem; font-weight:600; border:none; border-radius:14px; cursor:pointer; transition:all 0.3s; flex:1; }
+        .btn-primary { background:linear-gradient(135deg,#6c63ff,#3f3a9e); color:#fff; box-shadow:0 8px 20px rgba(108,99,255,0.3); }
+        .btn-primary:hover { transform:translateY(-2px); }
+        .btn-secondary { background:rgba(255,255,255,0.08); color:#c0c0e0; border:1px solid rgba(255,255,255,0.15); }
+        .btn-secondary:hover { background:rgba(255,255,255,0.18); }
+        .btn-refresh { background:rgba(0,200,255,0.15); color:#80e0ff; border:1px solid rgba(0,200,255,0.2); flex:0.5; }
+        .btn-refresh:hover { background:rgba(0,200,255,0.25); }
+        .result-area { margin-top:30px; padding:25px; border-radius:24px; background:rgba(0,0,0,0.3); min-height:150px; display:flex; flex-direction:column; justify-content:center; align-items:center; border:2px dashed rgba(255,255,255,0.05); transition:all 0.4s; }
+        .result-area.found { border:2px solid #6c63ff; background:rgba(108,99,255,0.12); }
+        .result-area.not-found { border:2px solid #ff4757; background:rgba(255,71,87,0.1); }
+        .result-label { color:#7a7a9a; font-size:0.85rem; text-transform:uppercase; letter-spacing:3px; }
+        .result-gaiola { font-size:5rem; font-weight:800; color:#6c63ff; margin:0; text-shadow:0 0 40px rgba(108,99,255,0.3); line-height:1.2; }
+        .result-nome { font-size:1.8rem; font-weight:500; color:#fff; background:rgba(255,255,255,0.05); padding:5px 25px; border-radius:40px; margin-top:5px; }
+        .result-sub { color:#8a8aaa; font-size:0.95rem; margin-top:10px; }
+        .fade-in { animation:fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { 0%{opacity:0;transform:scale(0.9) translateY(10px);} 100%{opacity:1;transform:scale(1) translateY(0);} }
+        @media (max-width:600px) { .container { padding:25px 15px; border-radius:24px; } h1 { font-size:1.8rem; } #searchInput { font-size:1.4rem; padding:14px; } .result-gaiola { font-size:3.5rem; } .result-nome { font-size:1.3rem; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📍 GAIOLA</h1>
+    <div class="subtitle">
+        <span>Digite o ID para saber sua rota</span>
+        <span class="status" id="statusBadge">🔄 Carregando...</span>
+    </div>
+    <div class="input-group">
+        <label for="searchInput">ID do Veículo / Motorista:</label>
+        <input type="text" id="searchInput" placeholder="Ex: 2135551" autofocus>
+    </div>
+    <div class="button-group">
+        <button class="btn btn-primary" id="searchBtn">🔍 BUSCAR</button>
+        <button class="btn btn-refresh" id="refreshBtn">↻</button>
+        <button class="btn btn-secondary" id="clearBtn">✕ LIMPAR</button>
+    </div>
+    <div class="result-area" id="resultArea">
+        <span class="result-label">RESULTADO DA CONSULTA</span>
+        <div class="result-gaiola" id="resultGaiola">—</div>
+        <div class="result-nome" id="resultNome">Aguardando...</div>
+        <span class="result-sub" id="resultSub">Digite o ID e aperte Buscar.</span>
+    </div>
+</div>
+
+<script>
+    // ================================================================
+    // 🔗 SUBSTITUA AQUI PELO LINK CSV DA SUA PLANILHA AUXILIAR
+    // ================================================================
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSwseEyFBlOm3laDOimSHK65apfqbJ8qft4QMmhG7BhizS0-kY6Ye4-HldATqgapBoDynxbYszZm-2c/pub?output=csv";  // <--- COLE AQUI O LINK QUE VOCÊ GEROU
+
+    const PROXY_URL = "https://api.allorigins.win/raw?url=";
+
+    let database = {};
+    let loading = false;
+
+    const input = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const resultGaiola = document.getElementById('resultGaiola');
+    const resultNome = document.getElementById('resultNome');
+    const resultArea = document.getElementById('resultArea');
+    const resultSub = document.getElementById('resultSub');
+    const statusBadge = document.getElementById('statusBadge');
+
+    async function carregarDados() {
+        if (loading) return;
+        loading = true;
+        statusBadge.textContent = '⏳ Baixando...';
+        statusBadge.style.color = '#ffd93d';
+
+        try {
+            const response = await fetch(PROXY_URL + encodeURIComponent(CSV_URL) + '&t=' + new Date().getTime());
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const csvText = await response.text();
+            if (!csvText.trim()) throw new Error('CSV vazio.');
+
+            const linhas = csvText.split('\n').filter(line => line.trim() !== '');
+            if (linhas.length < 2) throw new Error('Sem dados.');
+
+            // Cabeçalho deve ser: ID,NOME,GAIOLA
+            const cabecalho = linhas[0].split(',').map(h => h.trim().toLowerCase());
+            const idxID = cabecalho.indexOf('id');
+            const idxNome = cabecalho.indexOf('nome');
+            const idxGaiola = cabecalho.indexOf('gaiola');
+
+            if (idxID === -1 || idxNome === -1 || idxGaiola === -1) {
+                throw new Error(`Cabeçalho inválido. Esperado: ID, NOME, GAIOLA. Obtido: ${cabecalho.join(', ')}`);
+            }
+
+            const novosDados = {};
+            for (let i = 1; i < linhas.length; i++) {
+                const colunas = linhas[i].split(',').map(col => col.trim());
+                if (colunas.length < 3) continue;
+                const id = colunas[idxID];
+                const nome = colunas[idxNome];
+                const gaiola = colunas[idxGaiola];
+                if (id && nome && gaiola) {
+                    novosDados[id] = { nome, gaiola };
+                }
+            }
+
+            if (Object.keys(novosDados).length === 0) throw new Error('Nenhum registro válido.');
+            database = novosDados;
+            statusBadge.textContent = `✅ ${Object.keys(database).length} registros`;
+            statusBadge.style.color = '#7cff7c';
+            console.log('Dados carregados:', database);
+        } catch (error) {
+            console.error(error);
+            statusBadge.textContent = '❌ ' + error.message;
+            statusBadge.style.color = '#ff4757';
+        } finally {
+            loading = false;
+        }
+    }
+
+    function performSearch() {
+        const typedId = input.value.trim();
+        resultArea.classList.remove('found', 'not-found');
+
+        if (typedId === '') {
+            resultGaiola.textContent = '—';
+            resultNome.textContent = 'Digite um ID';
+            resultSub.textContent = 'Preencha o campo acima.';
+            resultGaiola.style.color = '#ffffff';
+            return;
+        }
+
+        const registro = database[typedId];
+        if (registro) {
+            resultArea.classList.add('found');
+            resultGaiola.textContent = registro.gaiola;
+            resultGaiola.className = 'result-gaiola fade-in';
+            resultGaiola.style.color = '#6c63ff';
+            resultNome.textContent = `👤 ${registro.nome}`;
+            resultNome.className = 'result-nome fade-in';
+            resultSub.textContent = `✔ ID ${typedId} encontrado com sucesso!`;
+        } else {
+            resultArea.classList.add('not-found');
+            resultGaiola.textContent = '❌';
+            resultGaiola.className = 'result-gaiola fade-in';
+            resultGaiola.style.color = '#ff4757';
+            resultNome.textContent = 'Não cadastrado';
+            resultNome.className = 'result-nome fade-in';
+            resultSub.textContent = `ID "${typedId}" não existe na planilha.`;
+        }
+    }
+
+    searchBtn.addEventListener('click', performSearch);
+    clearBtn.addEventListener('click', () => {
+        input.value = '';
+        resultGaiola.textContent = '—';
+        resultGaiola.className = 'result-gaiola';
+        resultGaiola.style.color = '#ffffff';
+        resultNome.textContent = 'Aguardando...';
+        resultNome.className = 'result-nome';
+        resultSub.textContent = 'Digite o ID e aperte Buscar.';
+        resultArea.classList.remove('found', 'not-found');
+        input.focus();
+    });
+    input.addEventListener('keyup', (e) => { if (e.key === 'Enter') performSearch(); });
+    refreshBtn.addEventListener('click', async () => {
+        await carregarDados();
+        if (input.value.trim() !== '') performSearch();
+    });
+
+    (async function init() {
+        await carregarDados();
+        input.focus();
+        setInterval(async () => {
+            await carregarDados();
+            if (input.value.trim() !== '') performSearch();
+        }, 30000);
+    })();
+</script>
+</body>
+</html>
