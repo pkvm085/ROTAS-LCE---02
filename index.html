@@ -402,7 +402,7 @@
       const motoristas = await carregarMotoristas();
       const encontrado = motoristas.find(m => m.id === typedId);
       if (!encontrado) {
-        throw new Error(`ID "${typedId}" não encontrado na planilha de motoristas.`);
+        throw new Error(`ID "${typedId}" não possuí rota atribuída nesse ciclo. Já se inscreve na lista de espera dos chamados!!`);
       }
 
       const romaneio = await carregarRomaneio();
